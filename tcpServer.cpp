@@ -21,6 +21,8 @@ void handle_client(int client_sock) {
     while ((read_bytes = recv(client_sock, buffer, sizeof(buffer), 0)) > 0) {
         buffer[read_bytes] = '\0';  // Ensure null-terminated string
         std::string data(buffer);
+// Output the received buffer before parsing to check what exactly is received
+std::cout << "Received buffer: " << buffer << std::endl;
 
         // Parse the data (userId,videoId)
         std::istringstream iss(data);
