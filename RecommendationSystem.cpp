@@ -1,70 +1,93 @@
 #include "RecommendationSystem.h"
 #include <map>
 #include <algorithm>
-#include <random>
 #include <iostream>
+#include <set>
+#include <vector>
 
-static std::map<std::string, std::vector<std::string>> userWatchHistory;
-static std::map<std::string, int> videoPopularity;
+static std::map<std::string, std::vector<std::string>> userWatchHistory; // Maps userId to list of watched videoIds
+static std::map<std::string, int> videoPopularity;                       // Maps videoId to the number of times it has been watched
 
 RecommendationSystem::RecommendationSystem() {}
 
 RecommendationSystem::~RecommendationSystem() {}
 
-void RecommendationSystem::updateHistory(const std::string& userId, const std::string& videoId) {
-    userWatchHistory[userId].push_back(videoId);
+// Update user history and video popularity when a video is watched
+void RecommendationSystem::updateHistory(const std::string &userId, const std::string &videoId)
+{
+    // Check if the user already exists in the watch history, if not, initialize
+    if (userWatchHistory.find(userId) == userWatchHistory.end())
+    {
+        userWatchHistory[userId] = std::vector<std::string>();
+    }
+
+    // If the user hasn't already watched this video, add it to their history
+    if (std::find(userWatchHistory[userId].begin(), userWatchHistory[userId].end(), videoId) == userWatchHistory[userId].end())
+    {
+        userWatchHistory[userId].push_back(videoId);
+    }
+
+    // Update the video's popularity (increment the watch count)
     videoPopularity[videoId]++;
 }
 
-std::vector<std::string> RecommendationSystem::getRecommendations(const std::string& userId, const std::string& videoId) {
-    std::set<std::string> recommendedVideoIds;
-    std::vector<std::pair<int, std::string>> scoredRecommendations;
+// Get recommendations for a user based on shared video history with other users
+std::vector<std::string> RecommendationSystem::getRecommendations(const std::string &userId, const std::string &videoId)
+{
+    std::map<std::string, int> candidateVideos; // Stores candidate videos and their popularity
 
-    std::cout << "User watch history size: " << userWatchHistory.size() << std::endl;
+    // Get the list of videos that the user has watched
+    const std::vector<std::string> &userVideos = userWatchHistory[userId];
 
-    for (auto& entry : userWatchHistory) {
-        std::cout << "Checking history for user: " << entry.first << std::endl;
-        if (entry.first != userId) {
-            for (auto& vid : entry.second) {
-                recommendedVideoIds.insert(vid);
+    // Compare the user's watch history with other users
+    for (const auto &[otherUserId, otherUserVideos] : userWatchHistory)
+    {
+        if (otherUserId != userId)
+        { // Skip comparing the user to themselves
+            // Check if there are any shared videos between the user and other users
+            bool hasSharedVideo = false;
+            for (const auto &vid : otherUserVideos)
+            {
+                if (std::find(userVideos.begin(), userVideos.end(), vid) != userVideos.end())
+                {
+                    hasSharedVideo = true;
+                    break;
+                }
+            }
+
+            // If there are shared videos, collect the other user's videos (excluding the current video)
+            if (hasSharedVideo)
+            {
+                for (const auto &vid : otherUserVideos)
+                {
+                    if (vid != videoId && std::find(userVideos.begin(), userVideos.end(), vid) == userVideos.end())
+                    {
+                        candidateVideos[vid] = videoPopularity[vid]; // Track the popularity of the candidate video
+                    }
+                }
             }
         }
     }
 
-    std::cout << "Recommended video IDs size: " << recommendedVideoIds.size() << std::endl;
-
-    for (auto& vid : recommendedVideoIds) {
-        scoredRecommendations.emplace_back(videoPopularity[vid], vid);
+    // If no shared videos are found, return an empty vector
+    if (candidateVideos.empty())
+    {
+        return {};
     }
 
-    std::sort(scoredRecommendations.rbegin(), scoredRecommendations.rend());
+    // Sort the candidate videos by their popularity (highest first)
+    std::vector<std::pair<std::string, int>> sortedCandidates(candidateVideos.begin(), candidateVideos.end());
+    std::sort(sortedCandidates.begin(), sortedCandidates.end(), [](const auto &a, const auto &b)
+              {
+                  return b.second < a.second; // Sort by view count in descending order
+              });
 
+    // Extract the video IDs from the sorted candidates
     std::vector<std::string> finalRecommendations;
-    for (auto& [score, vid] : scoredRecommendations) {
+    for (const auto &[vid, popularity] : sortedCandidates)
+    {
         finalRecommendations.push_back(vid);
-        if (finalRecommendations.size() == 6) break;
     }
 
-    std::cout << "Final recommendations size: " << finalRecommendations.size() << std::endl;
-    for (auto& vid : finalRecommendations) {
-        std::cout << "Recommendation: " << vid << " with score: " << videoPopularity[vid] << std::endl;
-    }
-
-    return finalRecommendations;
-}
-
-
-std::vector<std::string> RecommendationSystem::getRandomVideos(int count, const std::set<std::string>& exclude) {
-    std::vector<std::string> allVideos;
-    for (auto& [videoId, _] : videoPopularity) {
-        if (exclude.find(videoId) == exclude.end()) {
-            allVideos.push_back(videoId);
-        }
-    }
-
-    std::random_device rd;
-    std::mt19937 g(rd());
-    std::shuffle(allVideos.begin(), allVideos.end(), g);
-
-    return std::vector<std::string>(allVideos.begin(), allVideos.begin() + std::min(count, (int)allVideos.size()));
+    return finalRecommendations; // Return the final list of recommended videos
 }
