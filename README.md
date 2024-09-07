@@ -1,4 +1,3 @@
-```
 # PhotoTube-TCP-Server
 
 ## Introduction
@@ -41,4 +40,4 @@ Make sure to use the correct port, as described earlier.
 For complete setup and configuration instructions, including integrating the TCP Server with the full PhotoTube system, please refer to the project Wiki on the **PhotoTube-Server** repository.
 
 By following these steps, you should be able to successfully compile and run the TCP server, as well as integrate it with the Bloom Filter component and other aspects of the system. If you encounter any issues, please refer to the repository's documentation or reach out for support.
-```
+
