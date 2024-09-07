@@ -2,7 +2,7 @@
 
 ## Introduction
 The **PhotoTube-TCP-Server** is a core component of the PhotoTube system, designed to handle TCP communication between clients and the recommendation system. The server receives data on user video views and returns video recommendations based on shared watch history among users. The recommendation algorithm takes into account video popularity (number of times watched) and provides personalized suggestions.
-The algorithm only recommends videos that the user has not watched yet.
+*The algorithm only recommends videos that the user has not watched yet.*
 ## Getting Started
 
 ### 1. Installation Instructions
